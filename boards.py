@@ -63,4 +63,4 @@ def select_board():
 
     board_list = [board1, board2, board3, board4, board5, board6]
 
-    return board5#random.choice(board_list)
+    return random.choice(board_list)

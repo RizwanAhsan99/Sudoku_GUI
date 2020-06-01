@@ -21,7 +21,6 @@ GREY = (191, 191, 191)
 BLACK = (0, 0, 0)
 
 
-# noinspection DuplicatedCode
 class Board():
     def __init__(self, win, x, y, gridSize):
         self.win = win
@@ -174,7 +173,9 @@ class Board():
         for num in range(1, 10):
             if self.checkCorrect(self.editedBoard, num, row, col):
                 self.editedBoard[row][col] = num
-                pygame.draw.rect(win, GREEN, ((col*self.cellSize)+self.x, (row*self.cellSize)+self.y, self.cellSize, self.cellSize), 4)
+                x = (col * self.cellSize) + self.x
+                y = (row * self.cellSize) + self.y
+                pygame.draw.rect(win, GREEN, (x, y, self.cellSize, self.cellSize), 5)
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
@@ -184,8 +185,8 @@ class Board():
                     return True
 
                 self.editedBoard[row][col] = 0
-                pygame.draw.rect(win, WHITE, ((col*self.cellSize)+self.x, (row*self.cellSize)+self.y, self.cellSize, self.cellSize))
-                pygame.draw.rect(win, RED, ((col*self.cellSize)+self.x, (row*self.cellSize)+self.y, self.cellSize, self.cellSize), 4)
+                pygame.draw.rect(win, WHITE, (x, y, self.cellSize, self.cellSize))
+                pygame.draw.rect(win, RED, (x, y, self.cellSize, self.cellSize), 5)
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
@@ -213,8 +214,9 @@ class Board():
         return False
 
     def checkIfCorrect(self):
-        if self.editedBoard[self.mousePosition()[0]][self.mousePosition()[1]] != self.boardChecker[self.mousePosition()[0]][self.mousePosition()[1]]:
-            if self.editedBoard[self.mousePosition()[0]][self.mousePosition()[1]] != 0:
+        row, col = self.mousePosition()
+        if self.editedBoard[row][col] != self.boardChecker[row][col]:
+            if self.editedBoard[row][col] != 0:
                 pygame.draw.rect(win, RED, (self.xPos, self.yPos, self.cellSize, self.cellSize), 4)
 
 def reDrawGameWindow(win):
@@ -235,7 +237,7 @@ def reDrawGameWindow(win):
 board = Board(win, 50, 220, 630)
 board.editCheckerBoard()
 spacePressed = showError = False
-cPresed = 0
+cPressed = 0
 running = True
 while running:
     for event in pygame.event.get():
@@ -280,9 +282,9 @@ while running:
                 spacePressed = True
 
             if event.key == pygame.K_c:
-                cPresed += 1
+                cPressed += 1
 
-                if cPresed % 2 == 0:
+                if cPressed % 2 == 0:
                     showError = False
                 else:
                     showError = True
