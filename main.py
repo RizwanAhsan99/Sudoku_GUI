@@ -1,4 +1,4 @@
-#No importance just to ignore stupid warnings
+#No importance just to ignore warnings
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -11,6 +11,10 @@ win = pygame.display.set_mode((730, 900))
 pygame.display.set_caption("SUDOKU")
 icon = pygame.image.load("icon.png")
 pygame.display.set_icon(icon)
+
+#sound
+pygame.mixer.music.load("bg_music.mp3")
+pygame.mixer.music.play(-1)
 
 #Colors
 WHITE = (245, 245, 245)
@@ -179,7 +183,7 @@ class Board():
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
-                pygame.time.delay(30)
+                pygame.time.delay(20)
 
                 if self.solver():
                     return True
@@ -190,7 +194,7 @@ class Board():
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
-                pygame.time.delay(30)
+                pygame.time.delay(20)
 
         return False
 
@@ -236,7 +240,7 @@ def reDrawGameWindow(win):
 
 board = Board(win, 50, 220, 630)
 board.editCheckerBoard()
-spacePressed = showError = False
+spacePressed = showError = isSolved = False
 cPressed = 0
 running = True
 while running:
@@ -248,47 +252,48 @@ while running:
             board.mousePos = pygame.mouse.get_pos()
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1:
-                board.keypressed = 1
-            if event.key == pygame.K_2:
-                board.keypressed = 2
-            if event.key == pygame.K_3:
-                board.keypressed = 3
-            if event.key == pygame.K_4:
-                board.keypressed = 4
-            if event.key == pygame.K_5:
-                board.keypressed = 5
-            if event.key == pygame.K_6:
-                board.keypressed = 6
-            if event.key == pygame.K_7:
-                board.keypressed = 7
-            if event.key == pygame.K_8:
-                board.keypressed = 8
-            if event.key == pygame.K_9:
-                board.keypressed = 9
+            if not isSolved:
+                if event.key == pygame.K_1:
+                    board.keypressed = 1
+                if event.key == pygame.K_2:
+                    board.keypressed = 2
+                if event.key == pygame.K_3:
+                    board.keypressed = 3
+                if event.key == pygame.K_4:
+                    board.keypressed = 4
+                if event.key == pygame.K_5:
+                    board.keypressed = 5
+                if event.key == pygame.K_6:
+                    board.keypressed = 6
+                if event.key == pygame.K_7:
+                    board.keypressed = 7
+                if event.key == pygame.K_8:
+                    board.keypressed = 8
+                if event.key == pygame.K_9:
+                    board.keypressed = 9
+
+                if event.key == pygame.K_SPACE:
+                    # resets all previous inputs
+                    for i in range(9):
+                        for j in range(9):
+                            board.editedBoard[i][j] = board.initialBoard[i][j]
+
+                    board.solver()
+                    spacePressed = True
+                    isSolved = True
+
+                if event.key == pygame.K_c:
+                    cPressed += 1
+
+                    if cPressed % 2 == 0:
+                        showError = False
+                    else:
+                        showError = True
 
             if not spacePressed:
                 if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
                     if board.mouseOnGrid():
                         board.deleteSelected()
-
-            if event.key == pygame.K_SPACE:
-                # resets all previous inputs
-                for i in range(9):
-                    for j in range(9):
-                        board.editedBoard[i][j] = board.initialBoard[i][j]
-
-                board.solver()
-                spacePressed = True
-
-            if event.key == pygame.K_c:
-                cPressed += 1
-
-                if cPressed % 2 == 0:
-                    showError = False
-                else:
-                    showError = True
-
 
     if board.keypressed != 0:
         board.selected = True
