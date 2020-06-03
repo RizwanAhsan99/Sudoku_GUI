@@ -14,13 +14,18 @@ pygame.display.set_caption("SUDOKU")
 icon = pygame.image.load("icon.png")
 pygame.display.set_icon(icon)
 play_button = pygame.image.load("play_button.png")
-play_button = pygame.transform.smoothscale(play_button, (40, 40))
 pause_button = pygame.image.load("pause_button.png")
+tick_filled = pygame.image.load("tick_filled.png")
+tick_empty = pygame.image.load("tick_empty.png")
+#scale the icons to appropriate width, height
+play_button = pygame.transform.smoothscale(play_button, (40, 40))
 pause_button = pygame.transform.smoothscale(pause_button, (40, 40))
+tick_filled = pygame.transform.smoothscale(tick_filled, (35, 33))
+tick_empty = pygame.transform.smoothscale(tick_empty, (35, 33))
 
 #Sound
-# pygame.mixer.music.load("bg_music.mp3")
-# pygame.mixer.music.play(-1)
+pygame.mixer.music.load("bg_music.mp3")
+pygame.mixer.music.play(-1)
 
 #Colors
 WHITE = (245, 245, 245)
@@ -30,6 +35,7 @@ LIGHTBLUE = (191, 218, 255)
 GREY = (191, 191, 191)
 BLACK = (0, 0, 0)
 BLUE = (16, 187, 235)
+ORANGE = (255, 220, 145)
 
 
 class Board():
@@ -44,11 +50,13 @@ class Board():
         self.editedBoard = [[0 for x in range(9)] for x in range(9)] #Creates a dummy board with all 0's
         self.boardChecker = [[0 for x in range(9)] for x in range(9)]
         self.text = pygame.font.SysFont("calibri", 60)
+        self.noteText = pygame.font.SysFont("calibri", 30)
         self.keypressed = 0
         self.selected = False
         self.xPos = None
         self.yPos = None
         self.click = False
+        self.notes = False
 
     def generateIdenticalBoards(self):
         #Creates another identical non-aliased initial board
@@ -122,10 +130,14 @@ class Board():
             for j in range(9):
                 if board[i][j] != 0:
                     value = self.text.render(str(board[i][j]), 1, BLACK)
+                    noteValue = self.noteText.render(str(board[i][j]), 1, BLACK)
                     #draws a grey rect around the grid containing numbers when the initial board is passed
                     if board == self.initialBoard:
                         pygame.draw.rect(win, GREY, (self.x + x_change, self.y + y_change, self.cellSize, self.cellSize))
-                    win.blit(value, (self.x + x_change + 19, self.y + y_change + 10))
+                    if self.notes:
+                        win.blit(noteValue, (self.x + x_change + 10, self.y + y_change + 8))
+                    else:
+                        win.blit(value, (self.x + x_change + 19, self.y + y_change + 10))
 
                 x_change += 70
 
@@ -138,6 +150,7 @@ class Board():
         :param win: win
         :return: int
         """
+        global isSolved
         if self.mouseOnGrid():
             if self.initialBoard[self.mousePosition()[0]][self.mousePosition()[1]] == 0:
                 if self.keypressed:
@@ -145,7 +158,11 @@ class Board():
                     xPosition = (self.mousePosition()[1] * self.cellSize) + self.x
                     yPosition = (self.mousePosition()[0] * self.cellSize) + self.y
                     keyInput = self.text.render(str(self.keypressed), 1, BLACK)
-                    win.blit(keyInput, (xPosition + 19, yPosition + 10))
+                    noteInput = self.noteText.render(str(self.keypressed), 1, BLACK)
+                    if self.notes and not isSolved:
+                        win.blit(noteInput, (xPosition + 10, yPosition + 8))
+                    else:
+                        win.blit(keyInput, (xPosition + 19, yPosition + 10))
 
     def deleteSelected(self):
         """
@@ -269,16 +286,29 @@ class Board():
         draws the new game button and play/pause button and timer boxes
         :param win: win
         """
+        global isSolved
         text = pygame.font.SysFont("calibri", 30, 1)
         newGame = text.render("NEW GAME", 1, BLACK)
+        note = text.render("NOTES", 1, BLACK)
 
         #New game button
         pygame.draw.rect(win, BLUE, (self.x, 160, 160, 40))
         pygame.draw.rect(win, BLACK, (self.x, 160, 160, 40), 3)
         win.blit(newGame, (self.x + 7, 166))
+
         #Timer box
         pygame.draw.rect(win, BLUE, (self.x + self.gridSize - 105, 160, 105, 40))
         pygame.draw.rect(win, BLACK, (self.x + self.gridSize - 105, 160, 105, 40), 3)
+
+        #Note button
+        pygame.draw.rect(win, BLUE, (self.x + 240, 160, 160, 40))
+        pygame.draw.rect(win, BLACK, (self.x + 240, 160, 160, 40), 3)
+        win.blit(note, (self.x + 255, 166))
+
+        if self.notes and not isSolved:
+            win.blit(tick_filled, (self.x + 350, 163))
+        else:
+            win.blit(tick_empty, (self.x + 350, 163))
 
         if self.click:
             win.blit(play_button, (self.x + self.gridSize - 159, 160))
@@ -293,6 +323,7 @@ class Board():
         self.initialBoard = select_board()
         self.generateIdenticalBoards()
         self.editCheckerBoard()
+        self.notes = False
         #resets the timer
         start = time.time()
 
@@ -336,7 +367,7 @@ def infoBoard(win):
     pygame.draw.rect(win, BLACK, (board.x, 15, board.gridSize, 130), 3)
     text = pygame.font.SysFont("arial", 22, 1)
     info1 = text.render("> Normal Sudoku rules apply.", 1, BLACK)
-    info2 = text.render("> Left mouse click on cells to input numbers, right click to take notes.", 1, BLACK)
+    info2 = text.render('> Left click on cells to input numbers, press "Notes" to take notes.', 1, BLACK)
     info3 = text.render('> Press "Delete" or "Backspace" key to remove an input.', 1, BLACK)
     info4 = text.render('> Press "New Game" button to start a new sudoku game.', 1, BLACK)
     info5 = text.render('> PRESS "SPACE" TO WITNESS THE BOARD SOLVE ITSELF!', 1, BLACK)
@@ -346,18 +377,13 @@ def infoBoard(win):
     win.blit(info4, (board.x + 7, 92))
     win.blit(info5, (board.x + 7, 117))
 
-    #side designs
-    pygame.draw.rect(win, BLUE, (20, 14, 10, 858))
-    pygame.draw.rect(win, BLUE, (700, 14, 10, 858))
-    pygame.draw.rect(win, BLUE, (20, 870, 690, 10))
-
 ###################################################################################
 
 board = Board(win, 50, 220, 630)
 board.generateIdenticalBoards()
 board.editCheckerBoard()
 spacePressed = isSolved = False
-mouseClicked = 0
+mouseClicked = notesClicked = 0
 start = time.time()
 running = True
 while running:
@@ -385,9 +411,17 @@ while running:
                         board.newGame()
                         spacePressed = False
                         isSolved = False
+                        notesClicked = 0
 
-            if event.button == 2:
-                pass
+                #for notes button
+                if board.mousePos[0] > board.x + 240 and board.mousePos[0] < board.x + 400:
+                    if board.mousePos[1] > 160 and board.mousePos[1] < 200:
+                        if not isSolved:
+                            if notesClicked % 2 == 0:
+                                board.notes = True
+                            else:
+                                board.notes = False
+                            notesClicked += 1
 
         if event.type == pygame.KEYDOWN:
             if not isSolved:
@@ -416,9 +450,11 @@ while running:
                         for j in range(9):
                             board.editedBoard[i][j] = board.initialBoard[i][j]
 
+                    reDrawGameWindow(win)
                     board.solver()
                     spacePressed = True
                     isSolved = True
+                    board.notes = False
 
             if not spacePressed:
                 if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
