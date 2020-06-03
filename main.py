@@ -19,17 +19,17 @@ pause_button = pygame.image.load("pause_button.png")
 pause_button = pygame.transform.smoothscale(pause_button, (40, 40))
 
 #Sound
-pygame.mixer.music.load("bg_music.mp3")
-pygame.mixer.music.play(-1)
+# pygame.mixer.music.load("bg_music.mp3")
+# pygame.mixer.music.play(-1)
 
 #Colors
 WHITE = (245, 245, 245)
 RED = (255, 94, 94)
 GREEN = (0, 212, 14)
-BLUE = (191, 218, 255)
+LIGHTBLUE = (191, 218, 255)
 GREY = (191, 191, 191)
 BLACK = (0, 0, 0)
-BUTTON = (16, 187, 235)
+BLUE = (16, 187, 235)
 
 
 class Board():
@@ -49,6 +49,8 @@ class Board():
         self.xPos = None
         self.yPos = None
         self.click = False
+
+    def generateIdenticalBoards(self):
         #Creates another identical non-aliased initial board
         for i in range(9):
             for j in range(9):
@@ -104,7 +106,7 @@ class Board():
         if self.mouseOnGrid():
             self.xPos = (self.mousePosition()[1] * self.cellSize) + self.x
             self.yPos = (self.mousePosition()[0] * self.cellSize) + self.y
-            pygame.draw.rect(self.win, BLUE, (self.xPos, self.yPos, self.cellSize, self.cellSize))
+            pygame.draw.rect(self.win, LIGHTBLUE, (self.xPos, self.yPos, self.cellSize, self.cellSize))
 
     def displayNumbers(self, win, board):
         """
@@ -215,7 +217,7 @@ class Board():
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
-                pygame.time.delay(20)
+                pygame.time.delay(30)
 
                 if self.solver():
                     return True
@@ -226,7 +228,7 @@ class Board():
                 board.displayNumbers(win, board.editedBoard)  # Displays the edited board after input
                 board.drawBoard()
                 pygame.display.update()
-                pygame.time.delay(20)
+                pygame.time.delay(30)
 
         return False
 
@@ -252,47 +254,73 @@ class Board():
 
         return False
 
-    def checkInputIfCorrect(self):
+    def checkError(self):
         """
-        checks the player input with the solved boardChecker list
+        checks if the player input is wrong
         """
-        row, col = self.mousePosition()
-        if self.editedBoard[row][col] != self.boardChecker[row][col]:
-            if self.editedBoard[row][col] != 0:
-                pygame.draw.rect(win, RED, (self.xPos, self.yPos, self.cellSize, self.cellSize), 4)
+        if self.mouseOnGrid():
+            row, col = self.mousePosition()
+            if self.editedBoard[row][col] != self.boardChecker[row][col]:
+                if self.editedBoard[row][col] != 0:
+                    pygame.draw.rect(win, RED, (self.xPos + 2, self.yPos + 2, self.cellSize - 4, self.cellSize - 4), 6)
 
     def inputBoxes(self, win):
+        """
+        draws the new game button and play/pause button and timer boxes
+        :param win: win
+        """
         text = pygame.font.SysFont("calibri", 30, 1)
         newGame = text.render("NEW GAME", 1, BLACK)
 
-        pygame.draw.rect(win, BUTTON, (self.x + 25, 160, 160, 40))
-        pygame.draw.rect(win, BLACK, (self.x + 25, 160, 160, 40), 3)
-        pygame.draw.rect(win, BUTTON, (self.x + self.gridSize - 105, 160, 105, 40))
+        #New game button
+        pygame.draw.rect(win, BLUE, (self.x, 160, 160, 40))
+        pygame.draw.rect(win, BLACK, (self.x, 160, 160, 40), 3)
+        win.blit(newGame, (self.x + 7, 166))
+        #Timer box
+        pygame.draw.rect(win, BLUE, (self.x + self.gridSize - 105, 160, 105, 40))
         pygame.draw.rect(win, BLACK, (self.x + self.gridSize - 105, 160, 105, 40), 3)
-        win.blit(newGame, (self.x + 32, 166))
 
         if self.click:
             win.blit(play_button, (self.x + self.gridSize - 159, 160))
         else:
             win.blit(pause_button, (self.x + self.gridSize - 159, 160))
 
+    def newGame(self):
+        """
+        creates a new game with different board
+        """
+        global start
+        self.initialBoard = select_board()
+        self.generateIdenticalBoards()
+        self.editCheckerBoard()
+        #resets the timer
+        start = time.time()
+
+###################################################################################
 
 def reDrawGameWindow(win):
     win.fill(WHITE)
     if board.mousePos:
+        #highlights the selected cell
         board.highlightSelected()
-        if showError:
-            board.checkInputIfCorrect()
+        #checks for error
+        board.checkError()
         if board.keypressed:
+            #inserts number in editedBoard
             board.insertNumber(win)
 
     board.displayNumbers(win, board.initialBoard) #Displays the initial board
     board.displayNumbers(win, board.editedBoard) #Displays the edited board after input
+    #draws the entire board
     board.drawBoard()
+    #draws the buttons and timer boxes
     board.inputBoxes(win)
+    #blits the timer
     text = pygame.font.SysFont("calibri", 30, 1)
-    value = text.render(time_format(play_time), 1, BLACK)
-    win.blit(value, (board.x + board.gridSize - 80, 166))
+    time_value = text.render(time_format(play_time), 1, BLACK)
+    win.blit(time_value, (board.x + board.gridSize - 85, 166))
+    #draws the info section at the top
+    infoBoard(win)
     pygame.display.update()
 
 def time_format(secs):
@@ -303,11 +331,33 @@ def time_format(secs):
     formatted = str(minute) + " : " + str(sec)
     return formatted
 
+def infoBoard(win):
+    pygame.draw.rect(win, BLUE, (board.x, 15, board.gridSize, 130))
+    pygame.draw.rect(win, BLACK, (board.x, 15, board.gridSize, 130), 3)
+    text = pygame.font.SysFont("arial", 22, 1)
+    info1 = text.render("> Normal Sudoku rules apply.", 1, BLACK)
+    info2 = text.render("> Left mouse click on cells to input numbers, right click to take notes.", 1, BLACK)
+    info3 = text.render('> Press "Delete" or "Backspace" key to remove an input.', 1, BLACK)
+    info4 = text.render('> Press "New Game" button to start a new sudoku game.', 1, BLACK)
+    info5 = text.render('> PRESS "SPACE" TO WITNESS THE BOARD SOLVE ITSELF!', 1, BLACK)
+    win.blit(info1, (board.x + 7, 17))
+    win.blit(info2, (board.x + 7, 42))
+    win.blit(info3, (board.x + 7, 67))
+    win.blit(info4, (board.x + 7, 92))
+    win.blit(info5, (board.x + 7, 117))
+
+    #side designs
+    pygame.draw.rect(win, BLUE, (20, 14, 10, 858))
+    pygame.draw.rect(win, BLUE, (700, 14, 10, 858))
+    pygame.draw.rect(win, BLUE, (20, 870, 690, 10))
+
+###################################################################################
 
 board = Board(win, 50, 220, 630)
+board.generateIdenticalBoards()
 board.editCheckerBoard()
-spacePressed = showError = isSolved = False
-cPressed = mouseClicked = 0
+spacePressed = isSolved = False
+mouseClicked = 0
 start = time.time()
 running = True
 while running:
@@ -328,6 +378,13 @@ while running:
                         else:
                             board.click = False
                         mouseClicked += 1
+
+                #for new game button
+                if board.mousePos[0] > board.x and board.mousePos[0] < board.x + 160:
+                    if board.mousePos[1] > 160 and board.mousePos[1] < 200:
+                        board.newGame()
+                        spacePressed = False
+                        isSolved = False
 
             if event.button == 2:
                 pass
@@ -362,14 +419,6 @@ while running:
                     board.solver()
                     spacePressed = True
                     isSolved = True
-
-                if event.key == pygame.K_c:
-                    cPressed += 1
-
-                    if cPressed % 2 == 0:
-                        showError = False
-                    else:
-                        showError = True
 
             if not spacePressed:
                 if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
