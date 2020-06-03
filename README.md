@@ -1,9 +1,5 @@
 # Sudoku Solver - GUI and Terminal
 This is a Sudoku game and a solver. The solver was implemented using the backtracking algorithm. To see the solver in action press space. Enjoy!
-This is still a work in progress.
-### Features to be added:
-1. Button to start/pause the game.
-2. Button to take notes.
 
 ## GUI version
 ### Pygame library is required to be installed for this version to work
