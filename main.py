@@ -135,18 +135,22 @@ class Board():
                 value = self.text.render(str(board[i][j]), 1, BLACK)
                 noteValue = self.noteText.render(str(self.noteBoard[i][j]), 1, BLACK)
 
+                #when note button is not clicked
                 if board[i][j] != 0 and not self.notes:
                     #draws a grey rect around the grid containing numbers when the initial board is passed
                     if board == self.initialBoard:
                         pygame.draw.rect(win, GREY, (self.x + x_change, self.y + y_change, self.cellSize, self.cellSize))
                     win.blit(value, (self.x + x_change + 19, self.y + y_change + 10))
 
+                #when note button is clicked
                 if self.notes:
                     if board == self.initialBoard and board[i][j] != 0:
                         pygame.draw.rect(win, GREY, (self.x + x_change, self.y + y_change, self.cellSize, self.cellSize))
                         win.blit(value, (self.x + x_change + 19, self.y + y_change + 10))
-                    if self.noteBoard[i][j] != 0:
+                    if self.noteBoard[i][j] != 0 and self.editedBoard[i][j] == 0:
                         win.blit(noteValue, (self.x + x_change + 10, self.y + y_change + 8))
+                    if board == self.editedBoard and board[i][j] != 0:
+                        win.blit(value, (self.x + x_change + 19, self.y + y_change + 10))
 
                 x_change += 70
 
@@ -159,7 +163,7 @@ class Board():
         :param win: win
         :return: int
         """
-        global isSolved
+        global isSolved, pause_time, play_time
         if self.mouseOnGrid():
             if self.initialBoard[self.mousePosition()[0]][self.mousePosition()[1]] == 0:
                 if self.keypressed:
@@ -178,14 +182,19 @@ class Board():
                     else:
                         win.blit(keyInput, (xPosition + 19, yPosition + 10))
 
+        #when the board is solved keeps track of the time
+        if 0 not in self.editedBoard:
+            pause_time = play_time
+
     def deleteSelected(self):
         """
         The selected grid is changed to 0
         """
         number = self.mousePosition()
-        self.editedBoard[number[0]][number[1]] = 0
         if self.notes:
             self.noteBoard[number[0]][number[1]] = 0
+        else:
+            self.editedBoard[number[0]][number[1]] = 0
 
     def isEmpty(self, board):
         """
@@ -302,7 +311,7 @@ class Board():
         draws the new game button and play/pause button and timer boxes
         :param win: win
         """
-        global isSolved
+        global isSolved, finished
         text = pygame.font.SysFont("calibri", 30, 1)
         newGame = text.render("NEW GAME", 1, BLACK)
         note = text.render("NOTES", 1, BLACK)
@@ -327,6 +336,8 @@ class Board():
             win.blit(tick_empty, (self.x + 350, 163))
 
         if self.click:
+            win.blit(play_button, (self.x + self.gridSize - 159, 160))
+        elif finished:
             win.blit(play_button, (self.x + self.gridSize - 159, 160))
         else:
             win.blit(pause_button, (self.x + self.gridSize - 159, 160))
@@ -366,7 +377,7 @@ def reDrawGameWindow(win):
     #blits the timer
     text = pygame.font.SysFont("calibri", 30, 1)
     time_value = text.render(time_format(play_time), 1, BLACK)
-    if paused:
+    if paused or spacePressed or finished:
         pause_value = text.render(time_format(pause_time), 1, BLACK)
         win.blit(pause_value, (board.x + board.gridSize - 85, 166))
     else:
@@ -412,7 +423,7 @@ def infoBoard(win):
 board = Board(win, 50, 220, 630)
 board.generateIdenticalBoards()
 board.editCheckerBoard()
-spacePressed = isSolved = paused = False
+spacePressed = isSolved = paused = finished = False
 mouseClicked = notesClicked = 0
 pause_start = 0
 start = time.time()
@@ -428,24 +439,24 @@ while running:
                 board.mousePos = pygame.mouse.get_pos()
 
                 #for play/pause button
-                if board.mousePos[0] > board.x + board.gridSize - 159 and board.mousePos[0] < board.x + board.gridSize - 124:
-                    if board.mousePos[1] > 160 and board.mousePos[1] < 200:
-                        if mouseClicked % 2 == 0:
-                            board.click = paused = True
-                            pause_time = play_time
-                            pause()
-                        else:
-                            board.click = paused = False
-                            unpause()
-                            pygame.time.delay(150)
-                        mouseClicked += 1
+                if not finished:
+                    if board.mousePos[0] > board.x + board.gridSize - 159 and board.mousePos[0] < board.x + board.gridSize - 124:
+                        if board.mousePos[1] > 160 and board.mousePos[1] < 200:
+                            if mouseClicked % 2 == 0:
+                                board.click = paused = True
+                                pause_time = play_time
+                                pause()
+                            else:
+                                board.click = paused = False
+                                unpause()
+                                pygame.time.delay(150)
+                            mouseClicked += 1
 
                 #for new game button
                 if board.mousePos[0] > board.x and board.mousePos[0] < board.x + 160:
                     if board.mousePos[1] > 160 and board.mousePos[1] < 200:
                         board.newGame()
-                        spacePressed = False
-                        isSolved = False
+                        spacePressed = isSolved = False
                         notesClicked = 0
                         board.noteBoard = [[0 for x in range(9)] for x in range(9)]
 
@@ -489,9 +500,9 @@ while running:
                     board.notes = False
                     reDrawGameWindow(win)
                     board.solver()
-                    spacePressed = True
-                    isSolved = True
+                    spacePressed = isSolved = finished = True
                     board.notes = False
+                    pause_time = play_time
 
             if not spacePressed:
                 if event.key == pygame.K_DELETE or event.key == pygame.K_BACKSPACE:
@@ -500,6 +511,11 @@ while running:
 
     if board.keypressed != 0:
         board.selected = True
+
+    if board.editedBoard == board.boardChecker:
+        finished = True
+    else:
+        finished = False
 
     reDrawGameWindow(win)
     board.keypressed = 0
