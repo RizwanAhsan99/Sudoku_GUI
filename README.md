@@ -7,12 +7,6 @@ To install pygame type the following in command prompt or terminal:
 ```{r, engine='bash', count_lines}
 pip install pygame
 ```
-OR
-```{r, engine='bash', count_lines}
-pip3 install pygame
-```
-
-
 To run the GUI version use main.py
 
 ## Terminal version
